@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import WebView, { WebViewMessageEvent } from 'react-native-webview';
 import { handleUrlPress } from './Tools';
+import { Linking } from 'react-native';
 
 interface TwitterTweetProps {
   url: string;
@@ -63,11 +64,20 @@ const TwitterTweet = (props: TwitterTweetProps) => {
     // console.log("webviewHeight:", event.nativeEvent.data)
   };
 
+  const onNavigationStateChange = (navState) => {
+    const { url } = navState;
+    if (!url.includes('about:blank')) { // Check if the URL is not about:blank or any other URL you want to allow in WebView
+      Linking.openURL(url).catch(err => console.error('An error occurred', err)); // Open in the device's default browser
+      return false; // Prevent WebView from navigating to the new URL
+    }
+  };
+
   const injectedJavaScript = `
-      setTimeout(() => {
-        window.ReactNativeWebView.postMessage(
-          Math.min(document.body.offsetHeight, document.body.scrollHeight)
-        );}, 1800)`;
+    setTimeout(() => {
+      window.ReactNativeWebView.postMessage(
+        Math.min(document.body.offsetHeight, document.body.scrollHeight)
+    );}, 1800)
+  `;
 
   const renderEmbed = () => {
     if (embedHtml) {
@@ -95,12 +105,14 @@ const TwitterTweet = (props: TwitterTweetProps) => {
           }
           activeOpacity={0.95}
         >
-          <View style={styles.webview} pointerEvents="none">
+          <View style={styles.webview} pointerEvents="auto">
             <WebView
               source={{ html: html }}
               onMessage={onWebViewMessage}
               injectedJavaScript={injectedJavaScript}
-              scrollEnabled={false}
+              scrollEnabled={true}
+              pointerEvents='auto'
+              onNavigationStateChange={onNavigationStateChange}
             />
           </View>
         </TouchableOpacity>
